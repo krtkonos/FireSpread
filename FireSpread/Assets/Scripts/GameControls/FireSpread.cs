@@ -22,7 +22,7 @@ public class FireSpread : MonoBehaviour
         renderer.material.color = Color.red;
         StartCoroutine(TreeBurnedCO());
     }
-    private IEnumerator TreeBurnedCO() 
+    private IEnumerator TreeBurnedCO()
     {
         yield return new WaitForSeconds(_timeToCatchFire);
 
@@ -31,10 +31,9 @@ public class FireSpread : MonoBehaviour
         yield return new WaitForSeconds(_timeToFinishFire);
         if (isOnFire)
         {
-            //ChangeTerrainPaint();
             TreeDestroyed?.Invoke(gameObject);
         };
-        
+
     }
 
     public void Extinguish()
@@ -47,7 +46,7 @@ public class FireSpread : MonoBehaviour
     {
         Vector3 centerPoint = GetCirclePoint(transform.position, _treeSpacing - 10, _windDIrection);
         Collider[] nearbyTrees = Physics.OverlapSphere(centerPoint, treeSpacing);
-        BurnTheTerrain(centerPoint, _treeSpacing);
+        BrushBurned(centerPoint, _treeSpacing);
 
         if (isOnFire && nearbyTrees.Length > 0)
         {
@@ -73,37 +72,43 @@ public class FireSpread : MonoBehaviour
         Vector3 point = new Vector3(center.x + radius * Mathf.Sin(angle), center.y, center.z + radius * Mathf.Cos(angle));
         return point;
     }
+    private void BrushBurned(Vector3 treePosition, float radius)
+    {
+        StartCoroutine(BrushBurnedCo(treePosition, radius));
+    }
 
-    private void BurnTheTerrain(Vector3 centerPos, float radius)
+    private IEnumerator BrushBurnedCo(Vector3 treePosition, float radius)
     {
         Terrain terrain = Terrain.activeTerrain;
         TerrainData terrainData = terrain.terrainData;
         float[,,] alphamapData = terrainData.GetAlphamaps(0, 0, terrainData.alphamapWidth, terrainData.alphamapHeight);
 
-
-        int posXInTerrain = (int)((centerPos.x / terrainData.size.x) * terrainData.alphamapWidth);
-        int posZInTerrain = (int)((centerPos.z / terrainData.size.z) * terrainData.alphamapHeight);
+        int posXInTerrain = (int)((treePosition.x / terrainData.size.x) * terrainData.alphamapWidth);
+        int posZInTerrain = (int)((treePosition.z / terrainData.size.z) * terrainData.alphamapHeight);
 
         int radiusInPixels = (int)((radius / terrainData.size.x) * terrainData.alphamapWidth);
 
-        int startX = posXInTerrain - radiusInPixels;
-        int startZ = posZInTerrain - radiusInPixels;
-        int endX = posXInTerrain + radiusInPixels;
-        int endZ = posZInTerrain + radiusInPixels;
+        int startX = Mathf.Max(0, posXInTerrain - radiusInPixels);
+        int startZ = Mathf.Max(0, posZInTerrain - radiusInPixels);
+        int endX = Mathf.Min(terrainData.alphamapWidth - 1, posXInTerrain + radiusInPixels);
+        int endZ = Mathf.Min(terrainData.alphamapHeight - 1, posZInTerrain + radiusInPixels);
 
         for (int z = startZ; z <= endZ; z++)
         {
             for (int x = startX; x <= endX; x++)
             {
-                if (x >= 0 && x < terrainData.alphamapWidth && z >= 0 && z < terrainData.alphamapHeight)
+                float distance = Vector2.Distance(new Vector2(x, z), new Vector2(posXInTerrain, posZInTerrain));
+                if (distance <= radiusInPixels)
                 {
-                    float distance = Vector2.Distance(new Vector2(x, z), new Vector2(posXInTerrain, posZInTerrain));
-                    if (distance <= radiusInPixels)
-                    {
-                        alphamapData[z, x, 0] = 0f;
-                        alphamapData[z, x, 1] = 1f;
-                    }
+                    alphamapData[z, x, 0] = 0f;
+                    alphamapData[z, x, 1] = 1f;
                 }
+            }
+
+            // Yield every 100 rows to avoid blocking the main thread for too long
+            if (z % 100 == 0)
+            {
+                yield return null;
             }
         }
 

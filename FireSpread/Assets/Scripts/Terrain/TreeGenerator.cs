@@ -9,6 +9,7 @@ public class TreeGenerator : MonoBehaviour
     public int _treeCount;
     private Terrain _terrain;
     [HideInInspector] public List<GameObject> TreesList = new List<GameObject>();
+    [HideInInspector] public List<GameObject> TrunkList = new List<GameObject>();
     void Start()
     {
         GetRefferences();
@@ -56,8 +57,8 @@ public class TreeGenerator : MonoBehaviour
         Transform tr = tree.transform;
         GameObject trunk = Instantiate(_trunk, tr.position, tr.rotation, transform);
 
+        TrunkList.Add(trunk);
         TreesList.Remove(tree);
-        TreesList.Add(trunk);
         Destroy(tree);
     }
     public GameObject GetTree()

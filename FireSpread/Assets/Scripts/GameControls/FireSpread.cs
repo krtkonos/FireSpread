@@ -2,21 +2,111 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UIElements;
 
 public class FireSpread : MonoBehaviour
 {
     public static event System.Action<GameObject> TreeDestroyed;
-    public static UnityEvent<GameObject> TreeCreated;
+    public bool isOnFire = false;
+    private Color _originColor = new Color(1.0f, 0.91f, 0.69f, 1.0f);
+    public static float _treeSpacing = 10;
+    public static float _windDIrection = 10;
+    private float _timeToCatchFire = 2f;
+    private float _timeToBurnOut = 5f;
+    private float _timeToFinishFire;
     public void SetFire()
     {
+        _timeToFinishFire = _timeToBurnOut - _timeToCatchFire;
+        isOnFire = true;
         Renderer renderer = GetComponent<Renderer>();
         renderer.material.color = Color.red;
         StartCoroutine(TreeBurnedCO());
     }
     private IEnumerator TreeBurnedCO() 
     {
-        yield return new WaitForSeconds(5f);
-        TreeDestroyed?.Invoke(gameObject);
-        Destroy(gameObject);
+        yield return new WaitForSeconds(_timeToCatchFire);
+
+        Wait(_treeSpacing);
+
+        yield return new WaitForSeconds(_timeToFinishFire);
+        if (isOnFire)
+        {
+            //ChangeTerrainPaint();
+            TreeDestroyed?.Invoke(gameObject);
+        };
+        
+    }
+
+    public void Extinguish()
+    {
+        isOnFire = false;
+        Renderer renderer = GetComponent<Renderer>();
+        renderer.material.color = _originColor;
+    }
+    private void Wait(float treeSpacing)
+    {
+        Vector3 centerPoint = GetCirclePoint(transform.position, _treeSpacing - 10, _windDIrection);
+        Collider[] nearbyTrees = Physics.OverlapSphere(centerPoint, treeSpacing);
+        BurnTheTerrain(centerPoint, _treeSpacing);
+
+        if (isOnFire && nearbyTrees.Length > 0)
+        {
+
+            for (int i = 0; i < nearbyTrees.Length; i++)
+            {
+                GameObject tree = nearbyTrees[i].gameObject;
+                if (CanSetOnFire(tree))
+                {
+                    tree.GetComponent<FireSpread>().SetFire();
+                }
+            }
+        }
+    }
+
+    private bool CanSetOnFire(GameObject tree)
+    {
+        return tree != gameObject && tree.layer == LayerMask.NameToLayer("Tree") && !tree.GetComponent<FireSpread>().isOnFire;
+    }
+    private Vector3 GetCirclePoint(Vector3 center, float radius, float degreeOffset)
+    {
+        float angle = degreeOffset * Mathf.Deg2Rad;
+        Vector3 point = new Vector3(center.x + radius * Mathf.Sin(angle), center.y, center.z + radius * Mathf.Cos(angle));
+        return point;
+    }
+
+    private void BurnTheTerrain(Vector3 centerPos, float radius)
+    {
+        Terrain terrain = Terrain.activeTerrain;
+        TerrainData terrainData = terrain.terrainData;
+        float[,,] alphamapData = terrainData.GetAlphamaps(0, 0, terrainData.alphamapWidth, terrainData.alphamapHeight);
+
+
+        int posXInTerrain = (int)((centerPos.x / terrainData.size.x) * terrainData.alphamapWidth);
+        int posZInTerrain = (int)((centerPos.z / terrainData.size.z) * terrainData.alphamapHeight);
+
+        int radiusInPixels = (int)((radius / terrainData.size.x) * terrainData.alphamapWidth);
+
+        int startX = posXInTerrain - radiusInPixels;
+        int startZ = posZInTerrain - radiusInPixels;
+        int endX = posXInTerrain + radiusInPixels;
+        int endZ = posZInTerrain + radiusInPixels;
+
+        for (int z = startZ; z <= endZ; z++)
+        {
+            for (int x = startX; x <= endX; x++)
+            {
+                if (x >= 0 && x < terrainData.alphamapWidth && z >= 0 && z < terrainData.alphamapHeight)
+                {
+                    float distance = Vector2.Distance(new Vector2(x, z), new Vector2(posXInTerrain, posZInTerrain));
+                    if (distance <= radiusInPixels)
+                    {
+                        alphamapData[z, x, 0] = 0f;
+                        alphamapData[z, x, 1] = 1f;
+                    }
+                }
+            }
+        }
+
+        terrainData.SetAlphamaps(0, 0, alphamapData);
     }
 }

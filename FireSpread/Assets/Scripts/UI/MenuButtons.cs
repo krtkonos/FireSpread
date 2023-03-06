@@ -12,10 +12,13 @@ public class MenuButtons : MonoBehaviour
     [SerializeField] private Button _simulateButton;
     [SerializeField] private Button _fireButton;
     [SerializeField] private Button _exitButton;
+
     [SerializeField] private Toggle _modeButton;
     [SerializeField] private Toggle _SimulationButton;
+
     [SerializeField] private Slider _windStrenght;
     [SerializeField] private Slider _windDirection;
+
     [SerializeField] private TextMeshProUGUI _modeButtonText;
     [SerializeField] private TextMeshProUGUI _SimulateButtonText;
 
@@ -24,9 +27,9 @@ public class MenuButtons : MonoBehaviour
     [SerializeField] private int _randomFiredTreesNum;
     //[SerializeField] private GameObject _windArrow;
     [SerializeField] private RectTransform _windArrow;
+    public static bool activate;
 
     public static event System.Action<GameObject> Fire_TreeModeChanged;
-
     // Start is called before the first frame update
     void Start()
     {
@@ -91,7 +94,7 @@ public class MenuButtons : MonoBehaviour
     }
     private void OnWindStrengthChanged(float value)
     {
-        FireSpread._treeSpacing = Mathf.Lerp(10, 50, value);
+        FireSpread._treeSpacing = Mathf.Lerp(5, 15, value);
     }
     private void OnWindDirectionChanged(float value)
     {
@@ -126,5 +129,8 @@ public class MenuButtons : MonoBehaviour
 
         terrainData.SetAlphamaps(0, 0, alphamapData);
     }
-
+    private void OnApplicationQuit()
+    {
+        ClearTerrain();
+    }
 }

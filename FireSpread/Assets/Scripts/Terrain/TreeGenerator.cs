@@ -7,9 +7,16 @@ public class TreeGenerator : MonoBehaviour
     private GameObject[] _trees = new GameObject[3];
     private GameObject _trunk;
     public int _treeCount;
-    private Terrain _terrain;
+    public Terrain _terrain;
+    private int _maxTrunkCount = 8000;
+    private int _countToDelete = 10;
     [HideInInspector] public List<GameObject> TreesList = new List<GameObject>();
     [HideInInspector] public List<GameObject> TrunkList = new List<GameObject>();
+    public static TreeGenerator Instance { get; set; }
+    private void Awake()
+    {
+        Instance = this;
+    }
     void Start()
     {
         GetRefferences();
@@ -47,6 +54,14 @@ public class TreeGenerator : MonoBehaviour
 
     public void SetRandomFire(int treesNum)
     {
+        if (TreesList.Count <= 0)
+        {
+            return;
+        }
+        if (treesNum > 20)
+        {
+            treesNum = 20;
+        }
         for (int i = 0; i < treesNum; i++)
         {
             TreesList[Random.Range(0, TreesList.Count)].GetComponent<FireSpread>().SetFire();
@@ -60,9 +75,22 @@ public class TreeGenerator : MonoBehaviour
         TrunkList.Add(trunk);
         TreesList.Remove(tree);
         Destroy(tree);
+        if (TrunkList.Count > _maxTrunkCount)
+        {
+            DeleteOver();
+        }
     }
     public GameObject GetTree()
     {
         return _trees[Random.Range(0, _trees.Length)];
+    }
+    
+    private void DeleteOver()
+    {
+        for (int i = 0; i < TrunkList.Count - _maxTrunkCount; i++)
+        {
+            Destroy(TrunkList[i]);
+            TrunkList.Remove(TrunkList[i]);
+        }
     }
 }

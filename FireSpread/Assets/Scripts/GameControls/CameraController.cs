@@ -18,10 +18,6 @@ public class CameraController : MonoBehaviour
     [SerializeField] private Transform _treeParent;
 
     private float zoom = 10f;
-    private void Start()
-    {
-        //layerMask = LayerMask.NameToLayer(_terrainLayerName);
-    }
 
     private void Update()
     {

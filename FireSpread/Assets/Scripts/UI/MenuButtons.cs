@@ -36,11 +36,9 @@ public class MenuButtons : MonoBehaviour
         GetRefferences();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    /// <summary>
+    /// Adds Listeners to buttons. 
+    /// </summary>
     private void GetRefferences()
     {
         _generateButton.onClick.AddListener(GenerateTerrain);
@@ -94,7 +92,7 @@ public class MenuButtons : MonoBehaviour
     }
     private void OnWindStrengthChanged(float value)
     {
-        FireSpread._treeSpacing = Mathf.Lerp(5, 15, value);
+        FireSpread._spreadReach = Mathf.Lerp(5, 15, value);
     }
     private void OnWindDirectionChanged(float value)
     {
